@@ -1,0 +1,25 @@
+# Files
+*~
+.DS_Store
+Thumbs.db
+memo.md
+
+# Build & Packages
+node_modules/
+.parcel-cache
+.parcel
+parcel-*
+pnpm-*
+dist/
+
+# IDE
+.idea/
+
+# Other
+*.log
+*.txt
+package-lock.json
+yarn.lock
+deploy.js
+.env.development
+.env.production

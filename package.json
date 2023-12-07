@@ -1,0 +1,13 @@
+{
+  "name": "flick-flip",
+  "author": "ux-ui.pro",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "start": "node FlickFlip.js"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "fluent-ffmpeg": "^2.1.2"
+  }
+}
