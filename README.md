@@ -7,8 +7,8 @@ A class that uses the power of `Node.js` and the `fluent-ffmpeg` and `ffmpeg-sta
 
 &#10148; **Install**
 
-```
-yarn
+```console
+$ yarn
 ```
 
 <br>
@@ -16,7 +16,8 @@ yarn
 &#10148; **Usage**
 
 **1.** Put `*.mp4` files in the `input/` directory.<br>
-**2.** Take the compressed `*.mp4` and `*.webm` files from the `output/` directory.
+**2.** Take the compressed `*.mp4` and `*.webm` files from the `output/` directory.<br>
+**3.** `$ yarn start`
 
 <br>
 
