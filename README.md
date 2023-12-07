@@ -16,8 +16,8 @@ $ yarn
 &#10148; **Usage**
 
 **1.** Put `*.mp4` files in the `input/` directory.<br>
-**2.** Take the compressed `*.mp4` and `*.webm` files from the `output/` directory.<br>
-**3.** `$ yarn start`
+**2.** `$ yarn start`<br>
+**3.** Take the compressed `*.mp4` and `*.webm` files from the `output/` directory.
 
 <br>
 
