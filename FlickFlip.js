@@ -1,49 +1,64 @@
+const fs = require('fs').promises;
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+
 class FlickFlip {
   constructor() {
     this.mp4 = {
-      setCodec: 'libx265',
-      setBitrate: '1000k',
-      setSegments: 16,
-      setOptions: '-crf 28',
+      small: {
+        resolution: '1000x625',
+        codec: 'libx265',
+        bitrate: '1000k',
+        segments: 16,
+        options: '-crf 28',
+      },
+      big: {
+        resolution: '1600x1000',
+        codec: 'libx265',
+        bitrate: '1000k',
+        segments: 16,
+        options: '-crf 28',
+      }
     }
+
     this.webm = {
-      setCodec: 'libvpx-vp9',
-      setBitrate: '800k',
-      setSegments: 16,
-      setOptions: '-crf 29',
+      small: {
+        resolution: '1000x625',
+        codec: 'libvpx-vp9',
+        bitrate: '800k',
+        segments: 16,
+        options: '-crf 29',
+      },
+      big: {
+        resolution: '1600x1000',
+        codec: 'libvpx-vp9',
+        bitrate: '800k',
+        segments: 16,
+        options: '-crf 29',
+      }
     }
-    this.fs = require('fs');
-    this.ffmpeg = require('fluent-ffmpeg');
-    this.ffmpegPath = require('ffmpeg-static');
+
+    this.ffmpeg = ffmpeg;
+    this.ffmpeg.setFfmpegPath(ffmpegPath);
     this.inputFolder = 'input/';
     this.outputFolder = 'output/';
-    this.ffmpeg.setFfmpegPath(this.ffmpegPath);
-    this.inputFiles = this.fs.readdirSync(this.inputFolder);
-    this.mp4Files = this.inputFiles.filter(file => file.endsWith('.mp4'));
-
-    if (this.mp4Files.length === 0) {
-      console.error('Нет доступных файлов формата *.mp4');
-
-      return;
-    }
-
-    this.mp4Paths = this.mp4Files.map(file => `${ this.inputFolder + file }`);
-    this.clearOutput(this.outputFolder);
   }
 
-  clearOutput(directory) {
-    this.fs.readdir(directory, (err, files) => {
-      if (err) throw err;
+  async clearOutput(directory) {
+    try {
+      const files = await fs.readdir(directory);
 
       for (const file of files) {
-        this.fs.unlinkSync(`${ directory }/${ file }`);
+        await fs.unlink(`${directory}/${file}`);
       }
 
       console.log('Директория output очищена...');
-    });
+    } catch (err) {
+      throw err;
+    }
   }
 
-  convert(format, codec, bitrate, segments, options, output, input) {
+  async convert({format, codec, bitrate, segments, options, resolution, output, input}) {
     const fileName = input.split('/').pop().split('.mp4')[0];
 
     return new Promise((resolve, reject) => {
@@ -51,10 +66,11 @@ class FlickFlip {
         .output(output)
         .videoCodec(codec)
         .videoBitrate(bitrate, segments)
+        .size(resolution)
         .outputOptions(options)
         .noAudio()
         .on('end', () => {
-          console.log(`Файл ${ fileName }.${ format } создан...`);
+          console.log(`(${ fileName }) ${ format } ${ resolution } создан...`);
 
           resolve();
         })
@@ -67,41 +83,77 @@ class FlickFlip {
     });
   }
 
-  init() {
-    const promises = this.mp4Paths.map((input) => {
-      const fileName = input.split('/').pop().split('.mp4')[0];
-      const mp4Output = `${ this.outputFolder + fileName }.mp4`;
-      const webmOutput = `${ this.outputFolder + fileName }.webm`;
+  async init() {
+    try {
+      const inputFiles = await fs.readdir(this.inputFolder);
 
-      return Promise.all([
-        this.convert(
-          'MP4',
-          this.mp4.setCodec,
-          this.mp4.setBitrate,
-          this.mp4.setSegments,
-          this.mp4.setOptions,
-          mp4Output,
-          input,
-        ),
-        this.convert(
-          'WEBM',
-          this.webm.setCodec,
-          this.webm.setBitrate,
-          this.webm.setSegments,
-          this.webm.setOptions,
-          webmOutput,
-          input,
-        )
-      ]);
-    });
+      this.mp4Source = inputFiles.filter(file => file.endsWith('.mp4'));
 
-    return Promise.all(promises)
-      .then(() => {
-        console.log('Все конвертации выполнены!');
-      })
-      .catch((err) => {
-        console.error('Одна или несколько конвертаций не удалась:', err);
+      if (this.mp4Source.length === 0) {
+        console.error('Нет доступных файлов формата *.mp4');
+
+        return;
+      }
+
+      await this.clearOutput(this.outputFolder);
+
+      const promises = this.mp4Source.map((input) => {
+        const fileName = input.split('/').pop().split('.mp4')[0];
+        const mp4SmallOutput = `${ this.outputFolder + fileName }_small.mp4`;
+        const webmSmallOutput = `${ this.outputFolder + fileName }_small.webm`;
+        const mp4BigOutput = `${ this.outputFolder + fileName }_big.mp4`;
+        const webmBigOutput = `${ this.outputFolder + fileName }_big.webm`;
+
+        return Promise.all([
+          this.convert({
+            format: 'MP4',
+            codec: this.mp4.small.codec,
+            bitrate: this.mp4.small.bitrate,
+            segments: this.mp4.small.segments,
+            options: this.mp4.small.options,
+            resolution: this.mp4.small.resolution,
+            output: mp4SmallOutput,
+            input: `${ this.inputFolder }${ input }`,
+          }),
+          this.convert({
+            format: 'WEBM',
+            codec: this.webm.small.codec,
+            bitrate: this.webm.small.bitrate,
+            segments: this.webm.small.segments,
+            options: this.webm.small.options,
+            resolution: this.webm.small.resolution,
+            output: webmSmallOutput,
+            input: `${ this.inputFolder }${ input }`,
+          }),
+          this.convert({
+            format: 'MP4',
+            codec: this.mp4.big.codec,
+            bitrate: this.mp4.big.bitrate,
+            segments: this.mp4.big.segments,
+            options: this.mp4.big.options,
+            resolution: this.mp4.big.resolution,
+            output: mp4BigOutput,
+            input: `${ this.inputFolder }${ input }`,
+          }),
+          this.convert({
+            format: 'WEBM',
+            codec: this.webm.big.codec,
+            bitrate: this.webm.big.bitrate,
+            segments: this.webm.big.segments,
+            options: this.webm.big.options,
+            resolution: this.webm.big.resolution,
+            output: webmBigOutput,
+            input: `${ this.inputFolder }${ input }`,
+          }),
+        ]);
       });
+
+      await Promise.all(promises);
+
+      console.log('Все конвертации выполнены!');
+    } catch (err) {
+      console.error('Одна или несколько конвертаций не удались:', err);
+    }
   }
 }
 
